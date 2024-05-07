@@ -11,7 +11,14 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 import { QueryResult } from "@upstash/vector";
 import { useQuery } from "@tanstack/react-query";
-import { COLOR_FILTERS, COLORS, SIZE_FILTERS, SORT_OPTIONS, SUBCATEGORIES } from "@/consts";
+import {
+  COLOR_FILTERS,
+  COLORS,
+  SIZE_FILTERS,
+  SORT_OPTIONS,
+  SUBCATEGORIES,
+  PRICE_FILTERS,
+} from "@/consts";
 import Product from "@/components/Products/Product";
 import ProductSkeleton from "@/components/Products/ProductSkeleton";
 import {
@@ -28,7 +35,7 @@ export default function Home() {
     color: ["white", "beige", "blue", "green", "purple"],
     size: ["S", "M", "L"],
     sort: "none",
-    price: { isCustom: false, range: DEFAULT_CUSTOM_PRICE },  
+    price: { isCustom: false, range: DEFAULT_CUSTOM_PRICE },
   });
 
   const { data: products } = useQuery<QueryResult<ProductState>[]>({
@@ -46,22 +53,28 @@ export default function Home() {
     },
   });
 
-  const applyArrayFilter = ({category, value}: {category: keyof Omit<typeof filter, "price" | "sort">, value: string}) => {
-    const isFilterApplied = filter[category].includes(value as never)
-    if(isFilterApplied) {
+  const applyArrayFilter = ({
+    category,
+    value,
+  }: {
+    category: keyof Omit<typeof filter, "price" | "sort">;
+    value: string;
+  }) => {
+    const isFilterApplied = filter[category].includes(value as never);
+    if (isFilterApplied) {
       setFilter((prev) => ({
         ...prev,
         [category]: prev[category].filter((item) => item !== value),
-      }))
+      }));
     } else {
       setFilter((prev) => ({
         ...prev,
         [category]: [...prev[category], value],
-      }))
+      }));
     }
-  }
+  };
 
-  console.log(filter)
+  console.log(filter);
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-24">
@@ -100,6 +113,7 @@ export default function Home() {
           </button>
         </div>
       </div>
+
       <section className="pb-24 pt-6">
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-4">
           {/* Filters */}
@@ -123,7 +137,7 @@ export default function Home() {
                 <AccordionTrigger className="py-3 text-sm text-gray-400 hover:text-gray-500">
                   <span className="font-medium text-gray-900">Color</span>
                 </AccordionTrigger>
-
+                {/* Color filter */}
                 <AccordionContent className="animate-none pt-6">
                   <ul className="space-y-4 pb-4">
                     {COLOR_FILTERS.options.map((option, index) => (
@@ -131,11 +145,11 @@ export default function Home() {
                         <input
                           type="checkbox"
                           id={`color-${index}`}
-                          onChange={()=>{
+                          onChange={() => {
                             applyArrayFilter({
                               category: "color",
                               value: option.value,
-                            })
+                            });
                           }}
                           checked={filter.color.includes(option.value)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -164,11 +178,11 @@ export default function Home() {
                         <input
                           type="checkbox"
                           id={`size-${index}`}
-                          onChange={()=>{
+                          onChange={() => {
                             applyArrayFilter({
                               category: "size",
                               value: option.value,
-                            })
+                            });
                           }}
                           checked={filter.size.includes(option.value)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -181,6 +195,72 @@ export default function Home() {
                         </label>
                       </li>
                     ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+              {/* Price filter */}
+              <AccordionItem value="price">
+                <AccordionTrigger className="py-3 text-sm text-gray-400 hover:text-gray-500">
+                  <span className="font-medium text-gray-900">Price</span>
+                </AccordionTrigger>
+
+                <AccordionContent className="animate-none pt-6">
+                  <ul className="space-y-4 pb-4">
+                    {PRICE_FILTERS.options.map((option, index) => (
+                      <li key={option.label} className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`price-${index}`}
+                          onChange={() => {
+                            setFilter((prev) => ({
+                              ...prev,
+                              price: {
+                                isCustom: false,
+                                range: [...option.value]
+                              },
+                            }))
+                          }}
+                          checked={
+                            !filter.price.isCustom && filter.price.range[0] === option.value[0] && filter.price.range[1] === option.value[1]
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label
+                          htmlFor={`size-${index}`}
+                          className="ml-3 text-sm text-gray-600"
+                        >
+                          {option.label}
+                        </label>
+                      </li>
+                    ))}
+                    <li className="flex items-center">
+                    <input
+                          type="radio"
+                          id={`price-${PRICE_FILTERS.options.length}`}
+                          onChange={() => {
+                            setFilter((prev) => ({
+                              ...prev,
+                              price: {
+                                isCustom: true,
+                                range: [0, 100]
+                              },
+                            }))
+                          }}
+                          checked={
+                            filter.price.isCustom
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label
+                          htmlFor={`size-${PRICE_FILTERS.options.length}`}
+                          className="ml-3 text-sm text-gray-600"
+                        >
+                          Custom
+                        </label>
+                        <div>
+                          
+                        </div>
+                    </li>
                   </ul>
                 </AccordionContent>
               </AccordionItem>

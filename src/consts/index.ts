@@ -6,6 +6,25 @@ export const SUBCATEGORIES = [
 ];
 
 export const DEFAULT_CUSTOM_PRICE = [0, 100] as [number, number];
+export const PRICE_FILTERS = {
+  id: "price",
+  name: "Price",
+  options: [
+    {
+      label: "Any price",
+      value: [0, 100],
+    },
+    {
+      label: "Under $20",
+      value: [0, 20],
+    },
+    {
+      label: "Under $40",
+      value: [0, 40],
+    },
+    // Custom option defined in JSX
+  ] as const,
+} as const;
 
 export const SORT = ["none", "price-asc", "price-desc"] as const;
 export const SORT_OPTIONS = [
