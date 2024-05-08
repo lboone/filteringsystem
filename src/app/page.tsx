@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useCallback, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -20,6 +20,7 @@ import {
   PRICE_FILTERS,
 } from "@/consts";
 import Product from "@/components/Products/Product";
+import { Product as TProduct } from "../../types";
 import ProductSkeleton from "@/components/Products/ProductSkeleton";
 import {
   Accordion,
@@ -30,6 +31,8 @@ import { AccordionContent } from "@radix-ui/react-accordion";
 import { ProductState } from "../../types";
 import { DEFAULT_CUSTOM_PRICE } from "@/consts";
 import { Slider } from "@/components/ui/slider";
+import  debounce from "lodash.debounce";
+import EmptyState from "@/components/Products/EmptyState";
 
 export default function Home() {
   const [filter, setFilter] = useState<ProductState>({
@@ -39,23 +42,29 @@ export default function Home() {
     price: { isCustom: false, range: DEFAULT_CUSTOM_PRICE },
   });
 
-  const { data: products } = useQuery<QueryResult<ProductState>[]>({
+  const { data: products, refetch } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await axios.post<QueryResult<ProductState>[]>(
+      const { data } = await axios.post<QueryResult<TProduct>[]>(
         "http://localhost:3000/api/products",
         {
           filter: {
             sort: filter.sort,
             color: filter.color,
             size: filter.size,
-            price: filter.price,
+            price: filter.price.range,
           },
         }
       );
       return data;
     },
   });
+
+  const onSubmit = () => refetch();
+
+  const debouncedSubmit = debounce(onSubmit, 400);
+
+  const _debouncedSubmit = useCallback(debouncedSubmit, []);
 
   const applyArrayFilter = ({
     category,
@@ -76,10 +85,12 @@ export default function Home() {
         [category]: [...prev[category], value],
       }));
     }
+    _debouncedSubmit();
   };
 
   const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
   const maxPrice = Math.max(filter.price.range[0], filter.price.range[1]);
+
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -107,6 +118,7 @@ export default function Home() {
                       ...prev,
                       sort: option.value,
                     }));
+                    _debouncedSubmit();
                   }}
                 >
                   {option.name}
@@ -225,6 +237,7 @@ export default function Home() {
                                 range: [...option.value],
                               },
                             }));
+                            _debouncedSubmit();
                           }}
                           checked={
                             !filter.price.isCustom &&
@@ -254,6 +267,7 @@ export default function Home() {
                                 range: [0, 100],
                               },
                             }));
+                            _debouncedSubmit();
                           }}
                           checked={filter.price.isCustom}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -291,6 +305,8 @@ export default function Home() {
                               range: [newMin, newMax],
                             },
                           }));
+
+                          _debouncedSubmit();
                         }}
                         value={filter.price.isCustom ? filter.price.range : DEFAULT_CUSTOM_PRICE}
                         min={DEFAULT_CUSTOM_PRICE[0]}
@@ -308,7 +324,7 @@ export default function Home() {
 
           {/* Product grid */}
           <ul className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products
+            {products && products.length === 0 ? <EmptyState /> : products
               ? products?.map((product) => (
                   <Product product={product.metadata!} />
                 ))
